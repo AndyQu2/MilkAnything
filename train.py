@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import torch
+from torch.utils.data import Subset
 
 from nets.discriminator import Discriminator
 from nets.generator import Generator
@@ -23,8 +24,6 @@ def parse_args():
                         help='Torchvision backbone name for Discriminator')
     parser.add_argument('--weights', type=str, default=None,
                         help='Pretrained weights for the backbone (e.g., "DEFAULT")')
-    parser.add_argument('--dropout_rate', type=float, default=0.0,
-                        help='Dropout rate for Discriminator classifier (recommended: 0.0 for GAN stability)')
 
     parser.add_argument('--epochs', type=int, default=200,
                         help='Number of total epochs to train')
@@ -52,21 +51,25 @@ def main():
         print(f"Active GPU: {torch.cuda.get_device_name(0)}")
 
     print("\n--- Loading Datasets ---")
-    train_dir = os.path.join(args.data_path, 'train')
-    val_dir = os.path.join(args.data_path, 'val')
-
-    if not os.path.exists(train_dir):
-        train_dir = args.data_path
-        val_dir = args.data_path
-        print(f"Warning: 'train' subdirectory not found. Using '{args.data_path}' for both training and validation.")
 
     try:
-        train_dataset = CycleGANDataset(root_dir=train_dir, image_size=args.image_size, is_train=True)
-        val_dataset = CycleGANDataset(root_dir=val_dir, image_size=args.image_size, is_train=False)
-        print(
-            f"Train dataset size: {len(train_dataset)} (Source: {len(train_dataset.source_paths)}, Target: {len(train_dataset.target_paths)})")
-        print(
-            f"Val dataset size: {len(val_dataset)} (Source: {len(val_dataset.source_paths)}, Target: {len(val_dataset.target_paths)})")
+        train_dataset_full = CycleGANDataset(root_dir=args.data_path, image_size=args.image_size, is_train=True)
+        eval_dataset_full = CycleGANDataset(root_dir=args.data_path, image_size=args.image_size, is_train=False)
+
+        total_size = len(train_dataset_full)
+        train_size = int(0.65 * total_size)
+
+        generator = torch.Generator().manual_seed(42)
+        indices = torch.randperm(total_size, generator=generator).tolist()
+        train_indices = indices[:train_size]
+        eval_indices = indices[train_size:]
+
+        train_dataset = Subset(train_dataset_full, train_indices)
+        val_dataset = Subset(eval_dataset_full, eval_indices)
+
+        print(f"Train dataset size: {len(train_dataset)}")
+        print(f"Val dataset size: {len(val_dataset)}")
+
     except Exception as e:
         print(f"Failed to load dataset: {e}")
         sys.exit(1)
