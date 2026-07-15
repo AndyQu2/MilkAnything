@@ -4,11 +4,11 @@ from torchvision.models import get_model
 
 
 class Discriminator(nn.Module):
-    def __init__(self, backbone_name: str = 'efficientnet_v2_l', weight = None, dropout_rate: float = 0.2):
+    def __init__(self, backbone_name: str = 'efficientnet_v2_l', weights = None, dropout_rate: float = 0.2):
         super(Discriminator, self).__init__()
 
         self.dropout_rate = dropout_rate
-        self.backbone = get_model(backbone_name, weights=weight)
+        self.backbone = get_model(backbone_name, weights=weights)
         self._modify_classifier()
 
     def _modify_classifier(self):
@@ -38,8 +38,7 @@ class Discriminator(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(self.dropout_rate),
             
-            nn.Linear(int(in_features) // 4, 2),
-            nn.Sigmoid()
+            nn.Linear(int(in_features) // 4, 2)
         ))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

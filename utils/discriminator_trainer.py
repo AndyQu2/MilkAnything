@@ -12,11 +12,11 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
 
 from nets.discriminator import Discriminator
-from utils.dataset import CustomizedDataset
+from utils.dataset import DiscriminatorDataset
 
 
-class ModelTrainer:
-    def __init__(self, model: Discriminator, train_dataset: CustomizedDataset, eval_dataset: CustomizedDataset, batch_size: int = 16,
+class DiscriminatorTrainer:
+    def __init__(self, model: Discriminator, train_dataset: DiscriminatorDataset, eval_dataset: DiscriminatorDataset, batch_size: int = 16,
                  num_epochs: int = 200, learning_rate: float = 1e-3,
                  device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                  patience: int = 50, num_workers: int = 8,
@@ -47,7 +47,7 @@ class ModelTrainer:
             torch.set_float32_matmul_precision('high')
 
             torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
-            torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = True
+            torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 
         self.use_amp = use_amp and torch.cuda.is_available() and device.type == 'cuda'
         self.dtype = dtype
@@ -55,6 +55,14 @@ class ModelTrainer:
 
         self.device = device
         self.model.to(device, non_blocking=True)
+
+        if device.type == 'cuda':
+            self.model = torch.compile(
+                model,
+                mode="max-autotune",
+                fullgraph=False,
+                dynamic=False
+            )
 
         self.train_dataset = train_dataset
         self.val_dataset = eval_dataset
@@ -80,7 +88,7 @@ class ModelTrainer:
             drop_last = True,
         )
 
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCEWithLogitsLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         self.scheduler = CosineAnnealingWarmRestarts(self.optimizer, T_0=10, T_mult=2, eta_min=1e-6)
 
@@ -133,7 +141,7 @@ class ModelTrainer:
                              leave=False)
 
         with torch.no_grad():
-            for batch_idx, (images, category_index, labels_xy) in val_pbar:
+            for batch_idx, (images, labels_xy) in val_pbar:
                 images = images.to(self.device, non_blocking=True)
                 labels_xy = labels_xy.to(self.device, non_blocking=True)
 
@@ -161,7 +169,7 @@ class ModelTrainer:
             'batch_size': self.batch_size,
             'num_epochs': self.num_epochs,
             'learning_rate': self.learning_rate,
-            'device': self.device,
+            'device': str(self.device),
             'save_dir': self.save_dir,
             'patience': self.patience,
             'use_amp': self.use_amp,
