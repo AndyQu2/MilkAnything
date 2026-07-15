@@ -4,10 +4,9 @@ from torchvision.models import get_model
 
 
 class Discriminator(nn.Module):
-    def __init__(self, backbone_name: str = 'efficientnet_v2_l', weights = None, dropout_rate: float = 0.2):
+    def __init__(self, backbone_name: str = 'efficientnet_v2_l', weights=None):
         super(Discriminator, self).__init__()
 
-        self.dropout_rate = dropout_rate
         self.backbone = get_model(backbone_name, weights=weights)
         self._modify_classifier()
 
@@ -28,19 +27,21 @@ class Discriminator(nn.Module):
             raise ValueError('Can not determine in_features automatically.')
 
         setattr(self.backbone, last_layer_name, nn.Sequential(
-            nn.Linear(int(in_features), int(in_features) // 2, bias=False),
-            nn.BatchNorm1d(int(in_features) // 2),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.dropout_rate),
+            nn.Linear(int(in_features), int(in_features) // 2),
+            nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(int(in_features) // 2, int(in_features) // 4, bias=False),
-            nn.BatchNorm1d(int(in_features) // 4),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.dropout_rate),
-            
-            nn.Linear(int(in_features) // 4, 2)
+            nn.Linear(int(in_features) // 2, int(in_features) // 4),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Linear(int(in_features) // 4, 1)
         ))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.backbone(x)
         return x
+
+if __name__ == "__main__":
+    model = Discriminator()
+    dummy_input = torch.randn(1, 3, 256, 256)
+    dummy_output = model(dummy_input)
+    print(f"Discriminator Input: {dummy_input.shape} -> Output: {dummy_output.shape}")

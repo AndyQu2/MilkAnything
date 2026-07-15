@@ -1,61 +1,49 @@
 import torch
 from torch import nn
 
-
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding=0):
         super(EncoderBlock, self).__init__()
-
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
                               kernel_size=kernel_size, stride=stride, padding=padding, bias=False)
         self.bn = nn.InstanceNorm2d(num_features=out_channels, affine=True, track_running_stats=False)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.relu(x)
-        return x
+        return self.relu(self.bn(self.conv(x)))
 
 
 class TransformerBlock(nn.Module):
     def __init__(self, channels):
         super(TransformerBlock, self).__init__()
-
         self.conv_block = nn.Sequential(
             nn.ReflectionPad2d(1),
             nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=0, bias=False),
             nn.InstanceNorm2d(channels, affine=True, track_running_stats=False),
             nn.ReLU(inplace=True),
-
             nn.ReflectionPad2d(1),
             nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=0, bias=False),
             nn.InstanceNorm2d(channels, affine=True, track_running_stats=False)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # 残差连接：x + f(x)
         return x + self.conv_block(x)
 
 
 class DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, output_padding=1):
         super(DecoderBlock, self).__init__()
-
         self.conv = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                        stride=stride, padding=padding, output_padding=output_padding, bias=False)
         self.bn = nn.InstanceNorm2d(num_features=out_channels, affine=True, track_running_stats=False)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.relu(x)
-        return x
+        return self.relu(self.bn(self.conv(x)))
 
 
 class Generator(nn.Module):
-    def __init__(self, num_encoder, num_transformers, num_decoder):
+    def __init__(self, num_encoder=3, num_transformers=9, num_decoder=3):
         super(Generator, self).__init__()
 
         self.num_encoder = num_encoder
@@ -107,12 +95,6 @@ class Generator(nn.Module):
 
 if __name__ == "__main__":
     model = Generator(num_encoder=3, num_transformers=9, num_decoder=3)
-
-    print("Model Summary:")
-    print(model)
-
-    dummy_input = torch.randn(1, 3, 512, 512)
+    dummy_input = torch.randn(1, 3, 256, 256)
     dummy_output = model(dummy_input)
-
-    print(f"Input shape: {dummy_input.shape}")
-    print(f"Output shape: {dummy_output.shape}")
+    print(f"Generator Input: {dummy_input.shape} -> Output: {dummy_output.shape}")
