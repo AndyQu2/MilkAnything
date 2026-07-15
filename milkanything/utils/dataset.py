@@ -37,7 +37,7 @@ class CycleGANDataset(Dataset):
 
     @staticmethod
     def _load_images(dir_path):
-        valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp', '.heic'}
+        valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp', '.heic', '.HEIC', '.PNG', '.JPG', '.JPEG'}
         paths = []
         for root, _, files in os.walk(dir_path):
             for file in files:

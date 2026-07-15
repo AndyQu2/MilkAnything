@@ -1,13 +1,12 @@
 import argparse
-import os
 import sys
 import torch
 from torch.utils.data import Subset
 
-from nets.discriminator import Discriminator
-from nets.generator import Generator
-from utils.dataset import CycleGANDataset
-from utils.trainer import CycleGANTrainer
+from milkanything.nets.discriminator import Discriminator
+from milkanything.nets.generator import Generator
+from milkanything.utils.dataset import CycleGANDataset
+from milkanything.utils.trainer import MilkAnythingTrainer
 
 
 def parse_args():
@@ -31,7 +30,7 @@ def parse_args():
                         help='Batch size (adjust based on your GPU memory)')
     parser.add_argument('--lr', type=float, default=2e-4,
                         help='Initial learning rate for Adam optimizer')
-    parser.add_argument('--lambda_cyc', type=float, default=10.0,
+    parser.add_argument('--lambda_cyc', type=float, default=2.0,
                         help='Weight for cycle consistency loss')
 
     parser.add_argument('--num_workers', type=int, default=8,
@@ -85,7 +84,7 @@ def main():
     D_B = Discriminator(backbone_name=args.backbone, weights=args.weights)
 
     print("\n--- Setting up Trainer ---")
-    trainer = CycleGANTrainer(
+    trainer = MilkAnythingTrainer(
         G_A2B=G_A2B,
         G_B2A=G_B2A,
         D_A=D_A,

@@ -18,9 +18,9 @@ from torch import nn
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
 
-from nets.discriminator import Discriminator
-from nets.generator import Generator
-from utils.dataset import CycleGANDataset
+from milkanything.nets.discriminator import Discriminator
+from milkanything.nets.generator import Generator
+from milkanything.utils.dataset import CycleGANDataset
 
 try:
     from pillow_heif import register_heif_opener
@@ -30,7 +30,7 @@ except ImportError:
     print("Warning: 'pillow-heif' is not installed.")
 
 
-class CycleGANTrainer:
+class MilkAnythingTrainer:
     def __init__(self, G_A2B: Generator, G_B2A: Generator, D_A: Discriminator, D_B: Discriminator,
                  train_dataset: CycleGANDataset, val_dataset: CycleGANDataset, batch_size: int = 4,
                  num_epochs: int = 200, learning_rate: float = 2e-4, lambda_cyc: float = 10.0,
