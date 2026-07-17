@@ -1,0 +1,14 @@
+accelerate launch train_lora.py `
+  --pretrained_model_name_or_path="runwayml/stable-diffusion-v1-5" `
+  --instance_data_dir="imgs" `
+  --output_dir="./lora_weight" `
+  --instance_prompt="" `
+  --resolution=512 `
+  --train_batch_size=4 `
+  --gradient_accumulation_steps=4 `
+  --learning_rate=1e-4 `
+  --num_train_epochs=20 `
+  --checkpointing_steps=500 `
+  --use_8bit_adam `
+  --gradient_checkpointing `
+  --mixed_precision="fp16"
