@@ -10,9 +10,15 @@ from diffusers import StableDiffusionPipeline, StableDiffusionControlNetPipeline
 from diffusers.utils import load_image
 from controlnet_aux import OpenposeDetector, CannyDetector
 
+# Register HEIF/HEIC image opener extensions for Pillow compatibility
+# This allows diffusers.utils.load_image to seamlessly parse .heic/.heif files
+from pillow_heif import register_heif_opener
+register_heif_opener()
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Nai-Long LoRA Inference with Dynamic Prompt Layering (2026)")
+    parser = argparse.ArgumentParser(
+        description="Nai-Long LoRA Inference with Dynamic Prompt Layering and HEIF Support (2026)")
 
     # User-defined text description to overlay on top of the embedded template
     parser.add_argument("--user_prompt", type=str, default="",
@@ -21,7 +27,7 @@ def parse_args():
     # Generic base parameters
     parser.add_argument("--lora_path", type=str, default="./lora_weight",
                         help="Path to the LoRA weights directory or single safetensors file")
-    parser.add_argument("--lora_scale", type=float, default=0.8, help="LoRA conditioning scale (0.0 - 1.0)")
+    parser.add_argument("--lora_scale", type=float, default=0.85, help="LoRA conditioning scale (0.0 - 1.0)")
     parser.add_argument("--output", type=str, default="output.png", help="Filename of the output image")
     parser.add_argument("--steps", type=int, default=50, help="Number of inference steps")
     parser.add_argument("--guidance_scale", type=float, default=7.5, help="Classifier-Free Guidance (CFG) scale")
@@ -29,9 +35,10 @@ def parse_args():
     # ControlNet specific parameters
     parser.add_argument("--use_controlnet", action="store_true",
                         help="Enable dual ControlNet (Pose + Background Canny)")
-    parser.add_argument("--ref_image", type=str, default="human.jpg", help="Path to the reference human pose image")
-    parser.add_argument("--pose_scale", type=float, default=0.75, help="Weight for OpenPose control")
-    parser.add_argument("--canny_scale", type=float, default=0.55, help="Weight for Background Canny control")
+    parser.add_argument("--ref_image", type=str, default="human.jpg",
+                        help="Path to the reference image (Supports .jpg, .png, .heic, .heif)")
+    parser.add_argument("--pose_scale", type=float, default=0.5, help="Weight for OpenPose control")
+    parser.add_argument("--canny_scale", type=float, default=0.4, help="Weight for Background Canny control")
 
     return parser.parse_args()
 
@@ -82,6 +89,7 @@ def main():
         if not os.path.exists(args.ref_image):
             raise FileNotFoundError(f"Reference image not found at: {args.ref_image}")
 
+        # The pipeline can now read HEIF files directly here without any extra conversion logic
         user_image = load_image(args.ref_image).resize((512, 512))
 
         print("🩻 Extracting human pose skeleton...")
