@@ -1,14 +1,16 @@
-accelerate launch train_lora.py `
+python3 train_lora.py `
   --pretrained_model_name_or_path="runwayml/stable-diffusion-v1-5" `
   --instance_data_dir="imgs" `
   --output_dir="./lora_weight" `
-  --instance_prompt="" `
+  --instance_prompt="A high-quality macro photograph of a cute yellow chubby dinosaur-like dragon toy, standing in a bright minimalist cozy room, big round glossy green eyes, oversized white belly, chubby cheeks, soft smooth plastic texture, realistic shadows, shallow depth of field, bokeh, highly detailed, cinematic lighting, 3d vinyl toy trend" `
   --resolution=512 `
   --train_batch_size=4 `
   --gradient_accumulation_steps=4 `
   --learning_rate=1e-4 `
-  --num_train_epochs=20 `
-  --checkpointing_steps=500 `
+  --lr_scheduler="cosine" `
+  --lr_warmup_steps=40 `
+  --max_train_steps=2000 `
+  --checkpointing_steps=100 `
   --use_8bit_adam `
   --gradient_checkpointing `
   --mixed_precision="fp16"
